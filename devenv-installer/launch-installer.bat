@@ -4,6 +4,7 @@ REM GitHub-Based Installer Launcher
 REM Lanceur d'Installation basé sur GitHub
 REM 
 REM Company: SUN DATA CONSULTING
+REM Author: Ulrich Steve NOUMSI
 REM Repository: automation-scripts
 REM ============================================
 
