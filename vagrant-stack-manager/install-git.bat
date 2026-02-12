@@ -1,4 +1,7 @@
 @echo off
+REM SUN DATA CONSULTING
+REM Author: Ulrich Steve NOUMSI
+
 echo Installing Git...
 winget install --id Git.Git -e --source winget
 if %errorLevel% neq 0 (
