@@ -467,6 +467,9 @@ function Execute-VagrantAction {
         $confirm = [System.Windows.Forms.MessageBox]::Show((Get-Translation 'ConfirmDestroy' -f $name), "Confirm Destroy", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Warning)
         if ($confirm -ne 'Yes') { return }
         $cmdArgs = "destroy -f"
+    } elseif ($action -eq "up") {
+        # Force VirtualBox provider
+        $cmdArgs = "up --provider=virtualbox"
     } else {
         $cmdArgs = $action
     }
