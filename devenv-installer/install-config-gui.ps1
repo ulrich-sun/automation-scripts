@@ -239,26 +239,29 @@ function Install-AntigravityPlugins {
 }
 
 function Install-VirtualBox {
-    Update-Status (Get-Translation 'Installing_Item' -f "VirtualBox 7.2.0") 20
+    Update-Status (Get-Translation 'Installing_Item' -f "VirtualBox 7.2.6") 20
     
     try {
-        $vboxUrl = "https://download.virtualbox.org/virtualbox/7.2.0/VirtualBox-7.2.0-164728-Win.exe"
-        $vboxInstaller = "$script:TempDir\VirtualBox-7.2.0.exe"
+        # Using winget to install VirtualBox 7.2.6
+        # Note: If 7.2.6 is not yet available in winget source, this might fail or install latest.
+        # We attempt to request the specific version.
         
-        Update-Status (Get-Translation 'Downloading' -f "VirtualBox") 22
-        if (-not (Download-File $vboxUrl $vboxInstaller)) {
-            return $false
+        Write-Log "Installing Oracle.VirtualBox version 7.2.6 via Winget..."
+        
+        # Try specific version first
+        $result = winget install --id Oracle.VirtualBox --version 7.2.6 --silent --accept-package-agreements --accept-source-agreements 2>&1
+        
+        if ($LASTEXITCODE -ne 0) {
+            Write-Log "Version 7.2.6 not found or failed. Attempting latest version..." -Level "WARN"
+            $result = winget install --id Oracle.VirtualBox --silent --accept-package-agreements --accept-source-agreements 2>&1
         }
-        
-        Update-Status (Get-Translation 'Installing_Item' -f "VirtualBox") 25
-        $process = Start-Process -FilePath $vboxInstaller -ArgumentList "--silent" -Wait -PassThru
-        
-        if ($process.ExitCode -eq 0) {
-            Write-Log "VirtualBox 7.2.0 installed successfully"
+
+        if ($LASTEXITCODE -eq 0) {
+            Write-Log "VirtualBox installed successfully"
             return $true
         }
         else {
-            Write-Log "VirtualBox installation failed with exit code: $($process.ExitCode)" -Level "ERROR"
+            Write-Log "VirtualBox installation failed: $result" -Level "ERROR"
             return $false
         }
     }
@@ -700,28 +703,76 @@ $deselectAllBtn.Add_Click({
 })
 $form.Controls.Add($deselectAllBtn)
 
+# Custom Tool Section
+$customToolLabel = New-Object System.Windows.Forms.Label
+$customToolLabel.Location = New-Object System.Drawing.Point(10, 620)
+$customToolLabel.Size = New-Object System.Drawing.Size(200, 20)
+$customToolLabel.Text = "Custom Tool (Winget ID):"
+$form.Controls.Add($customToolLabel)
+
+$customToolInput = New-Object System.Windows.Forms.TextBox
+$customToolInput.Location = New-Object System.Drawing.Point(220, 617)
+$customToolInput.Size = New-Object System.Drawing.Size(200, 25)
+$form.Controls.Add($customToolInput)
+
+$installCustomToolBtn = New-Object System.Windows.Forms.Button
+$installCustomToolBtn.Location = New-Object System.Drawing.Point(430, 615)
+$installCustomToolBtn.Size = New-Object System.Drawing.Size(140, 27)
+$installCustomToolBtn.Text = "Install Tool"
+$installCustomToolBtn.Add_Click({
+    $toolId = $customToolInput.Text.Trim()
+    if (-not [string]::IsNullOrWhiteSpace($toolId)) {
+        $confirm = [System.Windows.Forms.MessageBox]::Show("Install '$toolId' via Winget?", "Confirm Install", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
+        if ($confirm -eq 'Yes') {
+            $installCustomToolBtn.Enabled = $false
+            $form.Cursor = [System.Windows.Forms.Cursors]::WaitCursor
+            Update-Status (Get-Translation 'Installing_Item' -f $toolId)
+            
+            # Non-blocking job or just run it (Since it's a simple GUI, we'll run it synchronously for simplicity, or Start-Process)
+            try {
+                $process = Start-Process -FilePath "winget" -ArgumentList "install --id $toolId --silent --accept-package-agreements --accept-source-agreements" -Wait -PassThru -NoNewWindow
+                if ($process.ExitCode -eq 0) {
+                    [System.Windows.Forms.MessageBox]::Show("Tool '$toolId' installed successfully!", "Success", "OK", "Information")
+                    Write-Log "Custom tool '$toolId' installed successfully"
+                } else {
+                    [System.Windows.Forms.MessageBox]::Show("Failed to install '$toolId'. Exit Code: $($process.ExitCode)", "Error", "OK", "Error")
+                    Write-Log "Custom tool '$toolId' failed. Exit Code: $($process.ExitCode)" -Level "ERROR"
+                }
+            } catch {
+                [System.Windows.Forms.MessageBox]::Show("Error executing Winget: $_", "Error", "OK", "Error")
+                Write-Log "Custom tool error: $_" -Level "ERROR"
+            }
+            
+            $form.Cursor = [System.Windows.Forms.Cursors]::Default
+            $installCustomToolBtn.Enabled = $true
+            $statusLabel.Text = "$(Get-Translation 'Status') $(Get-Translation 'Ready')"
+        }
+    }
+})
+$form.Controls.Add($installCustomToolBtn)
+
 # Progress bar (adjusted position)
 $progressLabel = New-Object System.Windows.Forms.Label
-$progressLabel.Location = New-Object System.Drawing.Point(10, 625)
+$progressLabel.Location = New-Object System.Drawing.Point(10, 660)
 $progressLabel.Size = New-Object System.Drawing.Size(100, 20)
 $progressLabel.Text = Get-Translation 'Progress'
 $form.Controls.Add($progressLabel)
 
 $progressBar = New-Object System.Windows.Forms.ProgressBar
-$progressBar.Location = New-Object System.Drawing.Point(10, 650)
+$progressBar.Location = New-Object System.Drawing.Point(10, 685)
 $progressBar.Size = New-Object System.Drawing.Size(560, 25)
 $form.Controls.Add($progressBar)
 
 # Status label (adjusted position)
 $statusLabel = New-Object System.Windows.Forms.Label
-$statusLabel.Location = New-Object System.Drawing.Point(10, 685)
+$statusLabel.Location = New-Object System.Drawing.Point(10, 720)
 $statusLabel.Size = New-Object System.Drawing.Size(560, 40)
 $statusLabel.Text = "$(Get-Translation 'Status') $(Get-Translation 'Ready')"
 $form.Controls.Add($statusLabel)
 
 # Install button (adjusted position)
 $installButton = New-Object System.Windows.Forms.Button
-$installButton.Location = New-Object System.Drawing.Point(350, 740)
+$installButton.Location = New-Object System.Drawing.Point(350, 780)
 $installButton.Size = New-Object System.Drawing.Size(100, 35)
 $installButton.Text = Get-Translation 'Install'
 $installButton.Add_Click({ Start-Installation })
@@ -729,7 +780,7 @@ $form.Controls.Add($installButton)
 
 # Cancel button (adjusted position)
 $cancelButton = New-Object System.Windows.Forms.Button
-$cancelButton.Location = New-Object System.Drawing.Point(470, 740)
+$cancelButton.Location = New-Object System.Drawing.Point(470, 780)
 $cancelButton.Size = New-Object System.Drawing.Size(100, 35)
 $cancelButton.Text = Get-Translation 'Cancel'
 $cancelButton.Add_Click({ $form.Close() })
