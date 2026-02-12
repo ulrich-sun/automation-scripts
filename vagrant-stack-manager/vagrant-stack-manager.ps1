@@ -10,7 +10,7 @@
     Interface graphique pour gérer les stacks Vagrant du dépôt d'entreprise.
 
 .NOTES
-    Author: Antigravity
+    Author: Ulrich Steve NOUMSI
     Company: SUN DATA CONSULTING
 #>
 
