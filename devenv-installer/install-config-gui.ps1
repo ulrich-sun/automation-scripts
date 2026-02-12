@@ -1,4 +1,4 @@
-#Requires -RunAsAdministrator
+﻿#Requires -RunAsAdministrator
 
 <#
 .SYNOPSIS
@@ -15,7 +15,7 @@
     - Vagrant Box (sundataconsulting/ubuntu)
 
 .NOTES
-    Author: Antigravity Assistant
+    Author: Ulrich Steve NOUMSI
     Requires: PowerShell 5.1+ and Administrator privileges
 #>
 
@@ -740,3 +740,4 @@ Write-Log "=== Development Environment Installer Started ==="
 
 # Show form
 [void]$form.ShowDialog()
+
