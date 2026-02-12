@@ -24,10 +24,16 @@ if %errorLevel% neq 0 (
     exit /b 1
 )
 
-REM Configure PowerShell execution policy
-powershell -Command "Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force" >nul 2>&1
+REM ============================================
+REM CONFIGURATION
+REM ============================================
+SET "GITHUB_USER=ulrich-sun"
+SET "GITHUB_REPO=automation-scripts"
+SET "SCRIPT_PATH=vagrant-stack-manager/vagrant-stack-manager.ps1"
+SET "GITHUB_RAW_URL=https://raw.githubusercontent.com/%GITHUB_USER%/%GITHUB_REPO%/main/%SCRIPT_PATH%"
+SET "TEMP_SCRIPT=%TEMP%\stack-manager-%RANDOM%.ps1"
 
-REM Check for Git
+REM Check for Git (Prerequisite)
 git --version >nul 2>&1
 if %errorLevel% neq 0 (
     echo [ERREUR] Git n'est pas installé ou détecté.
@@ -40,14 +46,27 @@ if %errorLevel% neq 0 (
     exit /b 1
 )
 
+echo [INFO] Téléchargement de la dernière version depuis GitHub...
+echo [INFO] Downloading latest version from GitHub...
+
+REM Download script using PowerShell (TLS 1.2 support)
+powershell -Command "& {[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; try { Invoke-WebRequest -Uri '%GITHUB_RAW_URL%' -OutFile '%TEMP_SCRIPT%' -UseBasicParsing; exit 0 } catch { Write-Host '[ERREUR/ERROR] Echec du téléchargement / Download failed'; Write-Host $_.Exception.Message; exit 1 }}"
+
+if %errorLevel% neq 0 (
+    echo.
+    echo [ERREUR] Impossible de télécharger le script. Vérifiez votre connexion internet.
+    echo [ERROR] Could not download the script. Check your internet connection.
+    pause
+    exit /b 1
+)
+
 echo [INFO] Lancement de l'application...
 echo [INFO] Launching application...
 echo.
 
-powershell -ExecutionPolicy Bypass -File "%~dp0vagrant-stack-manager.ps1"
+REM Execute the downloaded script
+powershell -ExecutionPolicy Bypass -File "%TEMP_SCRIPT%"
 
-if %errorLevel% neq 0 (
-    echo.
-    echo [ERREUR] Une erreur est survenue.
-    pause
-)
+REM Cleanup
+if exist "%TEMP_SCRIPT%" del /f /q "%TEMP_SCRIPT%" >nul 2>&1
+
