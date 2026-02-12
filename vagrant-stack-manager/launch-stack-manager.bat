@@ -2,6 +2,7 @@
 REM ============================================
 REM Launcher: Vagrant Stack Manager
 REM SUN DATA CONSULTING
+REM Author: Ulrich Steve NOUMSI
 REM ============================================
 
 REM Set console to UTF-8 for accents
